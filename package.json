@@ -1,0 +1,26 @@
+{
+  "name": "bun-co",
+  "private": "true",
+  "workspaces": [
+    "libs/*"
+  ],
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.3",
+    "bun-types": "^1.0.3",
+    "eslint": "^8.50.0",
+    "prettier": "^3.0.3",
+    "@types/ramda": "^0.29.5"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "drizzle-orm": "^0.28.6",
+    "ioredis": "^5.3.2",
+    "jsonwebtoken": "^9.0.2",
+    "pino": "^8.15.3",
+    "pino-pretty": "^10.2.0",
+    "postgres": "^3.3.5",
+    "ramda": "^0.29.0",
+    "zod": "^3.22.2",
+    "zod-validation-error": "^1.5.0"
+  }
+}
