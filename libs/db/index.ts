@@ -6,6 +6,7 @@ import {
   PostgresJsQueryResultHKT,
 } from "drizzle-orm/postgres-js";
 import { PgDatabase } from "drizzle-orm/pg-core";
+import { Err, Ok, Result } from "../utils/result";
 
 export type PostgresJsDatabase<
   TSchema extends Record<string, unknown> = Record<string, never>,
@@ -16,31 +17,47 @@ export type Credentials = {
   password: string;
   db: string;
 };
-let client = null;
-export const db = (
-  credentials?: Credentials,
-  envMap?: Record<string, string>
-) => {
-  if (!credentials && envMap) {
-    client = postgres({
-      host: envMap["HOST"],
-      port: 5432,
-      user: envMap["POSTGRES_USER"],
-      password: envMap["POSTGRES_PWD"],
-      ssl: false,
-      database: envMap["POSTGRES_DB"],
-    });
-  } else if (credentials) {
-    const { host, user, password, db } = credentials;
-    client = postgres({
-      host,
-      port: 5432,
-      user,
-      password,
-      ssl: false,
-      database: db,
-    });
-  }
 
-  return drizzle(client!);
+const errorMessage =
+  "You must provide either env config and env file with POSTGRES_DB,POSTGRES_PWD,POSTGRES_USER,POSTGRES_PORT fields or credentials for correct database service configuration";
+const handleErrorCases = (
+  { fromEnv, credentials }: PostgreConfig,
+  env?: EnvStore
+): Result<boolean, string> => {
+  const falseCondition =
+    !credentials ||
+    (fromEnv &&
+      (!env ||
+        (env &&
+          (!env?.get("POSTGRES_DB") ||
+            !env?.get("POSTGRES_PWD") ||
+            !env?.get("POSTGRES_USER") ||
+            !env?.get("POSTGRES_HOST")))));
+
+  return falseCondition ? Err(errorMessage) : Ok(true);
+};
+export const db = (
+  config: PostgreConfig,
+  env?: EnvStore
+): Result<PostgresJsDatabase, string> => {
+  const check = handleErrorCases(config, env);
+
+  return check.isErr()
+    ? Err(check.err().unwrap())
+    : Ok(
+        drizzle(
+          postgres(
+            (config.fromEnv
+              ? {
+                  host: env?.get("POSTGRES_HOST"),
+                  port: env?.get("POSTGRES_PORT") || 5432,
+                  user: env?.get("POSTGRES_USER"),
+                  password: env?.get("POSTGRES_PWD"),
+                  ssl: false,
+                  database: env?.get("POSTGRES_DB"),
+                }
+              : config.credentials) as any
+          )
+        )
+      );
 };

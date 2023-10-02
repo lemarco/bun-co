@@ -1,7 +1,15 @@
 import { CookieOptions, serialize } from "./src/cookie";
 import { cookieParser } from "./src/parser";
 
-export const CookieManager = (reqHeaders: Headers, resHeaders: Headers) => {
+export type CookieManager = {
+  set: (name: string, value: string, opts?: CookieOptions) => void;
+  get: (name: string) => string | undefined;
+  remove: (name: string) => void;
+};
+export const CookieManagerCons = (
+  reqHeaders: Headers,
+  resHeaders: Headers
+): CookieManager => {
   const cookies = cookieParser(reqHeaders)[0];
 
   return {

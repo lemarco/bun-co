@@ -1,31 +1,36 @@
 import dotenv from "dotenv";
-export function envReader(
-  varsToValidate: string[],
-  path?: string
-): Record<string, string> {
+import { Err, Ok, Result } from "../utils/result";
+
+type EnvValue = string;
+type EnvError = string;
+type EnvResult = Result<EnvValue, EnvError>;
+type EnvResults = Array<EnvResult>;
+type EnvReaderResults = Result<{ get: (name: string) => string }, EnvError>;
+
+const checkVar = (name: string, record: dotenv.DotenvParseOutput): EnvResult =>
+  record[name] ? Ok(record[name]) : Err(`No variable ${name} in env file.`);
+
+const checkAllVars = (
+  varNames: string[],
+  record: dotenv.DotenvParseOutput
+): EnvResults => varNames.map((name) => checkVar(name, record));
+
+const filterErrors = (results: EnvResults): EnvResults =>
+  results.filter((res) => res.isErr());
+
+export function envReader({ path, fields }: EnvConfig): EnvReaderResults {
   const { parsed } = dotenv.configDotenv({ path: path || "./env" });
-
   if (!parsed) {
-    throw "THERE IS NO ENV FILE";
+    return Err(`No env file on path ${path || "./env"}`);
   }
-  console.log("vars 2", parsed);
-  const vars: Record<string, string> = varsToValidate.reduce((acc, curr) => {
-    const envVar = parsed?.[curr];
-    if (envVar) {
-      vars[curr] = envVar;
-    } else {
-      throw new Error(`${envVar} must be in Env`);
-    }
-  }, {});
-  // for (const curr of varsToValidate) {
-  //   const envVar = parsed?.[curr];
-
-  //   if (envVar) {
-  //     vars[curr] = envVar;
-  //   } else {
-  //     new Error(`${envVar} must be in Env`);
-  //   }
-  // }
-  // console.log("vars", vars);
-  return vars;
+  const errors = filterErrors(checkAllVars(fields, parsed));
+  return errors.length
+    ? Err(
+        errors.reduce(
+          (acc, curr, idx, arr) =>
+            (acc += curr.unwrap() + (arr.length - 1 == idx ? "" : "\n")),
+          ""
+        )
+      )
+    : Ok({ get: (name: string) => parsed[name] });
 }
