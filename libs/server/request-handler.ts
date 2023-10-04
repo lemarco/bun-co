@@ -7,7 +7,7 @@ import { getUrlInfoFromRawUrl } from "./url";
 import { createErrorResponse } from "../response";
 import { getInternalError, getNotFoundError } from "../error";
 import { validateEntity } from "../validation";
-import { searchRoute } from "./routing";
+
 import { Router } from ".";
 export type MatchedRoute<T, Ctx> = {
   after: Handler<T, Ctx>[];
@@ -18,11 +18,6 @@ export type MatchedRoute<T, Ctx> = {
   params: Record<string, string>;
 };
 
-// const matchRoute =
-// type Matcher = <T, Ctx>(opts: {
-//   pathname: string;
-//   method: Method;
-// }) => Option<MatchedRoute<T, Ctx>>;
 type RHState<Ctx> = {
   state: State;
   router: Router<Ctx>;
@@ -34,13 +29,12 @@ export const requestHandler = async <T, Ctx>(
   req: Request,
   st: RHState<Ctx>
 ) => {
-  //console.log("requestHandler requestHandler");
   const { method, url: reqUrl, headers: reqHeaders, body: reqBody } = req;
   const { state, router, ctx, config } = st;
-  // console.log(state, match, ctx, config);
+
   const { searchParams, pathname } = getUrlInfoFromRawUrl(reqUrl);
   const matched = router.match(pathname, method as Method);
-  //console.log(matched);
+
   if (matched.isSome()) {
     const { before, after, handler, bodySchema, querySchema, params } =
       matched.unwrap();

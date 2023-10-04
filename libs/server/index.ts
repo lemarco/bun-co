@@ -55,10 +55,6 @@ export class RouteNode<T, Ctx> {
   bodySchema?: Option<z.ZodObject<any>>;
   querySchema?: Option<z.ZodObject<any>>;
   params: Record<string, string> = {};
-  // isLeaf: boolean = false;
-  // param: string | null = null;
-
-  // route: Route<T, Ctx> | null = null;
 }
 
 type Methods =
@@ -108,7 +104,7 @@ export class Router<Ctx> {
             node.after = after || [];
             node.before = before || [];
             node.handler = handler;
-            console.log("DYNAMIC SEGMENT", segment.replace(":", ""));
+
             currentNode.dynamic = [segment.replace(":", ""), node];
             currentNode = node;
           } else {
@@ -132,7 +128,7 @@ export class Router<Ctx> {
 
   match(path: string, method: Method) {
     const segments = path.split("/").filter(Boolean);
-    // console.log("segments = ", segments);
+
     const params: Record<string, string> = {};
     let currentNode = this.root[method.toLowerCase() as Methods];
     for (const segment of segments) {
@@ -166,7 +162,6 @@ export const server = <Ctx>(root: RootGroup<Ctx>) => {
     port,
 
     fetch: (req) => {
-      console.log("FETCH TRIGGERED");
       return requestHandler(req, {
         state,
         router,
@@ -181,7 +176,7 @@ export const server = <Ctx>(root: RootGroup<Ctx>) => {
   return {
     start: () => {
       server = Bun.serve(serverInstanceConfig);
-      console.log("123");
+
       console.log(`Listening on http://${hostname}:${port} ...`);
     },
     stop: () => server.stop(),
