@@ -20,44 +20,20 @@ export type Credentials = {
 
 const errorMessage =
   "You must provide either env config and env file with POSTGRES_DB,POSTGRES_PWD,POSTGRES_USER,POSTGRES_PORT fields or credentials for correct database service configuration";
-const handleErrorCases = (
-  { fromEnv, credentials }: PostgreConfig,
-  env?: EnvStore
-): Result<boolean, string> => {
-  const falseCondition =
-    !credentials ||
-    (fromEnv &&
-      (!env ||
-        (env &&
-          (!env?.get("POSTGRES_DB") ||
-            !env?.get("POSTGRES_PWD") ||
-            !env?.get("POSTGRES_USER") ||
-            !env?.get("POSTGRES_HOST")))));
 
-  return falseCondition ? Err(errorMessage) : Ok(true);
-};
 export const db = (
   config: PostgreConfig,
   env?: EnvStore
 ): Result<PostgresJsDatabase, string> => {
-  const check = handleErrorCases(config, env);
+  const creds = {
+    host: (env && env?.get("POSTGRES_HOST")) || config.credentials?.host,
+    port: (env && env?.get("POSTGRES_PORT")) || 5432,
+    user: (env && env?.get("POSTGRES_USER")) || config.credentials?.user,
+    database: (env && env?.get("POSTGRES_DB")) || config.credentials?.database,
+    password: (env && env?.get("POSTGRES_PWD")) || config.credentials?.password,
+  };
 
-  return check.isErr()
-    ? Err(check.err().unwrap())
-    : Ok(
-        drizzle(
-          postgres(
-            (config.fromEnv
-              ? {
-                  host: env?.get("POSTGRES_HOST"),
-                  port: env?.get("POSTGRES_PORT") || 5432,
-                  user: env?.get("POSTGRES_USER"),
-                  password: env?.get("POSTGRES_PWD"),
-                  ssl: false,
-                  database: env?.get("POSTGRES_DB"),
-                }
-              : config.credentials) as any
-          )
-        )
-      );
+  return Object.values(creds).every((val) => !Boolean(val))
+    ? Err(errorMessage)
+    : Ok(drizzle(postgres(creds as any)));
 };

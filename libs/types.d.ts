@@ -37,7 +37,7 @@ declare global {
   export type RouteGroup<Ctx> = {
     config?: RouteGroupConfig;
     ctx?: Ctx;
-    prefix?: string;
+    path?: string;
     routes: Array<Route<any, Ctx> | RouteGroup<Ctx>>;
     before?: Handler<any, Ctx>[];
     after?: Handler<any, Ctx>[];
@@ -47,7 +47,7 @@ declare global {
     port?: number;
     config?: RouteGroupConfig;
     ctx?: Ctx;
-    prefix?: string;
+    path?: string;
     routes: Array<Route<any, Ctx> | RouteGroup<Ctx>>;
     before?: Handler<any, Ctx>[];
     after?: Handler<any, Ctx>[];
@@ -66,7 +66,7 @@ declare global {
   type EnvConfig = {
     readonly path?: string;
 
-    readonly fields: string[];
+    readonly fields?: string[];
   };
   type RedisConfig = {
     readonly fromEnv?: boolean;

@@ -8,29 +8,39 @@ import { createErrorResponse } from "../response";
 import { getInternalError, getNotFoundError } from "../error";
 import { validateEntity } from "../validation";
 import { searchRoute } from "./routing";
+import { Router } from ".";
 export type MatchedRoute<T, Ctx> = {
   after: Handler<T, Ctx>[];
   before: Handler<T, Ctx>[];
   handler: Handler<T, Ctx>[];
   bodySchema: Option<z.ZodObject<any>>;
   querySchema: Option<z.ZodObject<any>>;
-  params: Option<Record<string, string>>;
+  params: Record<string, string>;
 };
-export const requestHandler = async <T, Ctx>(req: Request, res: Response) => {
+
+// const matchRoute =
+// type Matcher = <T, Ctx>(opts: {
+//   pathname: string;
+//   method: Method;
+// }) => Option<MatchedRoute<T, Ctx>>;
+type RHState<Ctx> = {
+  state: State;
+  router: Router<Ctx>;
+  ctx?: Ctx;
+  config?: RouteGroupConfig;
+};
+
+export const requestHandler = async <T, Ctx>(
+  req: Request,
+  st: RHState<Ctx>
+) => {
+  //console.log("requestHandler requestHandler");
   const { method, url: reqUrl, headers: reqHeaders, body: reqBody } = req;
-  const { state, router } = this as unknown as {
-    state: State;
-    router: RootGroup<Ctx>;
-  };
-
+  const { state, router, ctx, config } = st;
+  // console.log(state, match, ctx, config);
   const { searchParams, pathname } = getUrlInfoFromRawUrl(reqUrl);
-  const matched = searchRoute({
-    pathname,
-    method: method as Method,
-    routes: router.routes,
-    prefix: router.prefix,
-  });
-
+  const matched = router.match(pathname, method as Method);
+  //console.log(matched);
   if (matched.isSome()) {
     const { before, after, handler, bodySchema, querySchema, params } =
       matched.unwrap();
@@ -55,25 +65,18 @@ export const requestHandler = async <T, Ctx>(req: Request, res: Response) => {
 
     const args = {
       req,
-      res,
+      res: response,
       body: body.unwrap(),
       query,
-      params: params.isSome() ? params.unwrap() : undefined,
-      headers: HeadersManagerCons(reqHeaders, res.headers),
+      params: params ? params : undefined,
+      headers: HeadersManagerCons(reqHeaders, response.headers),
       cookies:
-        (router.config?.cookies &&
-          CookieManagerCons(reqHeaders, res.headers)) ||
+        (config?.cookies && CookieManagerCons(reqHeaders, response.headers)) ||
         undefined,
-      ctx: router.ctx,
+      ctx,
       ...state,
     } satisfies HandlerParams<T, Ctx>;
-    const funcs = [
-      ...(router.before || []),
-      ...before,
-      ...handler,
-      ...after,
-      ...(router.after || []),
-    ];
+    const funcs = [...(before || []), handler!, ...(after || [])];
     try {
       for (const f of funcs) {
         await f(args);

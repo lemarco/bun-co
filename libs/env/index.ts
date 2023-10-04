@@ -23,14 +23,18 @@ export function envReader({ path, fields }: EnvConfig): EnvReaderResults {
   if (!parsed) {
     return Err(`No env file on path ${path || "./env"}`);
   }
-  const errors = filterErrors(checkAllVars(fields, parsed));
-  return errors.length
-    ? Err(
-        errors.reduce(
-          (acc, curr, idx, arr) =>
-            (acc += curr.unwrap() + (arr.length - 1 == idx ? "" : "\n")),
-          ""
+  if (fields) {
+    const errors = filterErrors(checkAllVars(fields, parsed));
+    return errors.length
+      ? Err(
+          errors.reduce(
+            (acc, curr, idx, arr) =>
+              (acc += curr.unwrap() + (arr.length - 1 == idx ? "" : "\n")),
+            ""
+          )
         )
-      )
-    : Ok({ get: (name: string) => parsed[name] });
+      : Ok({ get: (name: string) => parsed[name] });
+  } else {
+    return Ok({ get: (name: string) => parsed[name] });
+  }
 }

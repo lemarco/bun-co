@@ -13,16 +13,13 @@ export const JwtManager = (
   { secret: userSecret, fromEnv }: JwtConfig,
   env?: EnvStore
 ): Result<JwtService, string> => {
-  if (
-    (fromEnv && !env) ||
-    (fromEnv && !env?.get("JWT_SECRET")) ||
-    !userSecret
-  ) {
+  const secret = (fromEnv ? env?.get("JWT_SECRET") : userSecret) as string;
+
+  if (!secret) {
     return Err(
       "You must provide either env config and env file with JWT_SECRET field or secret for correct jwt service configuration"
     );
   }
-  const secret = (fromEnv ? env?.get("JWT_SECRET") : userSecret) as string;
 
   return Ok({
     sign: <Token>(data: Token, opts?: SignOptions) =>

@@ -5,7 +5,8 @@ const errorStr =
 export const RedisManager = (
   { url, fromEnv }: RedisConfig,
   env?: EnvStore
-): Result<Redis, string> =>
-  (fromEnv && !env) || (fromEnv && !env?.get("REDIS_URL")) || !url
-    ? Err(errorStr)
-    : Ok(new Redis(url || env!.get("REDIS_URL")));
+): Result<Redis, string> => {
+  const secret = (fromEnv && env?.get("REDIS_URL")) || url;
+
+  return !secret ? Err(errorStr) : Ok(new Redis(url || env!.get("REDIS_URL")));
+};

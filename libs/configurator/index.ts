@@ -28,6 +28,7 @@ export const configurator = ({
   logger,
 }: RouteGroupConfig): State => {
   const envStore = env && envReader(env).mapErr(defaultErrorMapper).unwrap();
+
   return {
     env: envStore,
     jwt: jwt && JwtManager(jwt, envStore).mapErr(defaultErrorMapper).unwrap(),
